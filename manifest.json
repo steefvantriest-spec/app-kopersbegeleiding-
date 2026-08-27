@@ -1,0 +1,20 @@
+{
+  "name": "DES Projectportaal",
+  "short_name": "DES",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#3B342E",
+  "theme_color": "#3B342E",
+  "icons": [
+    {
+      "src": "/apple-touch-icon-v2.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
