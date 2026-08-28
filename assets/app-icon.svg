@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Kopersbegeleiding app-icoon</title>
+  <rect width="512" height="512" rx="104" fill="#005CA3"/>
+  <path d="M118 238 256 116l138 122" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="38"/>
+  <path d="M150 218v170h212V218M221 388v-96h70v96" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="38"/>
+  <path d="M362 136h50v88" fill="none" stroke="#0096DA" stroke-linecap="round" stroke-width="28"/>
+</svg>

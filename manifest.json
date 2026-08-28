@@ -1,20 +1,19 @@
 {
-  "name": "DES Projectportaal",
-  "short_name": "DES",
-  "start_url": "/",
+  "name": "Slokker Kopersbegeleiding",
+  "short_name": "Kopersapp",
+  "description": "Projectinformatie en uitleg voor kopers van Slokker Bouwgroep.",
+  "lang": "nl-NL",
+  "start_url": "/#info",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#3B342E",
-  "theme_color": "#3B342E",
+  "background_color": "#F3F6F8",
+  "theme_color": "#005CA3",
   "icons": [
     {
-      "src": "/apple-touch-icon-v2.png",
-      "sizes": "180x180",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512-v2.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/assets/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
