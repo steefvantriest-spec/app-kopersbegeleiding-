@@ -5,6 +5,287 @@
     window.history.scrollRestoration = "manual";
   }
 
+  const appData = window.KOPERS_APP_DATA;
+
+  function elementById(id) {
+    return document.getElementById(id);
+  }
+
+  function setText(id, value) {
+    const element = elementById(id);
+    if (element) element.textContent = value ?? "";
+  }
+
+  function setTime(id, dateTime, label) {
+    const element = elementById(id);
+    if (!element) return;
+
+    element.dateTime = dateTime || "";
+    element.textContent = label || "";
+  }
+
+  function parseLocalDate(value) {
+    const [year, month = 1, day = 1] = String(value || "").split("-").map(Number);
+    return new Date(year, month - 1, day, 12);
+  }
+
+  function formatDutchDate(value, options) {
+    const date = value instanceof Date ? value : parseLocalDate(value);
+    return new Intl.DateTimeFormat("nl-NL", options).format(date);
+  }
+
+  function capitalize(value) {
+    return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "";
+  }
+
+  function localDateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function renderShellData({ project, buyer }) {
+    setText("sidebar-project-name", project.name);
+    setText("sidebar-dwelling-number", `Woning ${project.dwellingNumber}`);
+    setText("sidebar-project-status", `${project.currentPhase} gestart`);
+    setText("topbar-dwelling-number", `Woning ${project.dwellingNumber}`);
+    setText("buyer-summary-avatar", buyer.initials);
+    setText("buyer-summary-name", buyer.fullName);
+
+    const topbarProject = document.querySelector(".topbar-project");
+    const buyerSummary = document.querySelector(".buyer-summary");
+    if (topbarProject) topbarProject.setAttribute("aria-label", `Huidige woning: ${project.dwellingNumber}`);
+    if (buyerSummary) buyerSummary.setAttribute("aria-label", `Ingelogd als ${buyer.fullName}`);
+  }
+
+  function renderCurrentUpdate(project, update) {
+    const progress = Math.min(100, Math.max(0, Number(project.progress) || 0));
+    const progressRing = elementById("project-progress-ring");
+    const progressPanel = elementById("project-progress-panel");
+
+    setText("current-update-label", update.label);
+    setText("project-update-title", update.title);
+    setText("current-update-summary", update.summary);
+    setText("current-update-button-label", update.buttonLabel);
+    setTime(
+      "current-update-date",
+      update.updatedAt,
+      `Bijgewerkt op ${formatDutchDate(update.updatedAt, { day: "numeric", month: "long", year: "numeric" })}`,
+    );
+    setText("project-progress-value", `${progress}%`);
+    setText("project-current-phase", project.currentPhase);
+    setText("project-phase-position", `Fase ${project.currentPhaseNumber} van ${project.phaseCount}`);
+
+    if (progressRing) {
+      progressRing.style.setProperty("--progress", String(progress));
+      progressRing.setAttribute("aria-valuenow", String(progress));
+      progressRing.setAttribute("aria-label", `Bouwvoortgang: ${progress}% gereed`);
+    }
+
+    if (progressPanel) {
+      progressPanel.setAttribute(
+        "aria-label",
+        `Huidige bouwfase: ${project.currentPhase}, fase ${project.currentPhaseNumber} van ${project.phaseCount}`,
+      );
+    }
+
+    const updateButton = elementById("current-update-button");
+    if (updateButton) {
+      updateButton.dataset.demoAction = "Het volledige projectbericht wordt in een volgende fase gekoppeld.";
+    }
+  }
+
+  function renderWeeklyStatus(items) {
+    const list = elementById("weekly-status-list");
+    if (!list) return;
+
+    const statusLabels = {
+      completed: "Gereed",
+      in_progress: "Bezig",
+      upcoming: "Binnenkort",
+    };
+
+    list.replaceChildren();
+    items.slice(0, 4).forEach((item) => {
+      const status = statusLabels[item.status] ? item.status : "upcoming";
+      const listItem = document.createElement("li");
+      const icon = document.createElement("span");
+      const text = document.createElement("span");
+
+      listItem.className = `weekly-status-item weekly-status-item--${status.replace("_", "-")}`;
+      listItem.setAttribute("aria-label", `${statusLabels[status]}: ${item.text}`);
+      icon.className = "weekly-status-item__icon";
+      icon.setAttribute("aria-hidden", "true");
+      text.textContent = item.text;
+
+      if (status === "completed") icon.append(iconUse("icon-check"));
+      listItem.append(icon, text);
+      list.append(listItem);
+    });
+  }
+
+  function renderBuyerAction(actions) {
+    const card = elementById("buyer-action-card");
+    const deadline = elementById("buyer-action-deadline");
+    const deadlineValue = elementById("buyer-action-deadline-value");
+    const button = elementById("buyer-action-button");
+    const icon = card?.querySelector(".action-card__icon use");
+    if (!card || !deadline || !deadlineValue || !button) return;
+
+    const action = actions[0];
+    card.classList.toggle("action-card--required", Boolean(action));
+    card.classList.toggle("action-card--clear", !action);
+
+    if (!action) {
+      setText("buyer-action-label", "Geen actie nodig");
+      setText("buyer-action-title", "Op dit moment hoeft u niets te doen.");
+      setText("buyer-action-description", "U bent helemaal bij. Zodra er iets van u nodig is, ziet u dat hier.");
+      deadline.hidden = true;
+      button.hidden = true;
+      if (icon) icon.setAttribute("href", "#icon-check");
+      return;
+    }
+
+    setText("buyer-action-label", "Actie nodig");
+    setText("buyer-action-title", action.title);
+    setText("buyer-action-description", action.description);
+    setTime("buyer-action-deadline-value", action.deadline, action.deadlineLabel);
+    button.textContent = action.buttonLabel;
+    button.dataset.demoAction = "De koppeling met Huisinfo wordt in een volgende fase toegevoegd.";
+    deadline.hidden = false;
+    button.hidden = false;
+    if (icon) icon.setAttribute("href", "#icon-alert");
+  }
+
+  function renderImportantMoments(deadlines) {
+    const list = elementById("important-moments-list");
+    if (!list) return;
+
+    list.replaceChildren();
+    deadlines.slice(0, 3).forEach((deadline) => {
+      const listItem = document.createElement("li");
+      const date = document.createElement("time");
+      const day = document.createElement("strong");
+      const month = document.createElement("span");
+      const copy = document.createElement("div");
+      const title = document.createElement("strong");
+
+      date.className = "moment-date";
+      date.dateTime = deadline.date;
+      day.textContent = deadline.dayLabel;
+      month.textContent = deadline.monthLabel;
+      copy.className = "moment-list__copy";
+      title.textContent = deadline.title;
+
+      date.append(day, month);
+      copy.append(title);
+      listItem.append(date, copy);
+      list.append(listItem);
+    });
+  }
+
+  function renderLatestNews(newsItems) {
+    const item = newsItems[0];
+    const date = elementById("latest-news-date");
+    const button = elementById("latest-news-button");
+    if (!date || !button) return;
+
+    if (!item) {
+      setText("latest-news-title", "Er zijn geen nieuwe berichten.");
+      setText("latest-news-summary", "Zodra er nieuws over uw project is, vindt u dat hier.");
+      date.hidden = true;
+      button.hidden = true;
+      return;
+    }
+
+    setText("latest-news-title", item.title);
+    setText("latest-news-summary", item.summary);
+    setText("latest-news-button-label", item.buttonLabel);
+    setTime(
+      "latest-news-date",
+      item.publishedAt,
+      formatDutchDate(item.publishedAt, { day: "numeric", month: "long", year: "numeric" }),
+    );
+    button.dataset.demoAction = "Het volledige nieuwsbericht wordt in een volgende fase gekoppeld.";
+    date.hidden = false;
+    button.hidden = false;
+  }
+
+  function renderDocuments(documents) {
+    const list = elementById("important-documents-list");
+    if (!list) return;
+
+    list.replaceChildren();
+    documents.slice(0, 3).forEach((documentItem) => {
+      const button = document.createElement("button");
+      const icon = document.createElement("span");
+      const body = document.createElement("span");
+      const title = document.createElement("strong");
+      const metadata = document.createElement("small");
+
+      button.className = "document-row";
+      button.type = "button";
+      button.setAttribute("aria-label", `Open ${documentItem.title}`);
+      button.dataset.demoAction = `${documentItem.title} is in deze fase nog een voorbeelddocument.`;
+      icon.className = "document-row__icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.append(iconUse("icon-document"));
+      body.className = "document-row__body";
+      title.textContent = documentItem.title;
+      metadata.textContent = `${documentItem.type} · ${documentItem.size} · bijgewerkt ${formatDutchDate(documentItem.updatedAt, {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })}`;
+
+      body.append(title, metadata);
+      button.append(icon, body, iconUse("icon-download"));
+      list.append(button);
+    });
+  }
+
+  function renderContactPerson(contactPerson) {
+    setText("contact-initials", contactPerson.initials);
+    setText("contact-name", contactPerson.name);
+    setText("contact-role", contactPerson.role);
+    setText("contact-introduction", contactPerson.introduction);
+    setText("contact-email-label", contactPerson.emailLabel);
+
+    const emailButton = elementById("contact-email-button");
+    const phoneButton = elementById("contact-phone-button");
+    if (emailButton) {
+      emailButton.dataset.demoAction = `De e-mailfunctie voor ${contactPerson.name} wordt in een volgende fase gekoppeld.`;
+      emailButton.setAttribute("aria-label", `${contactPerson.emailLabel} naar ${contactPerson.name}`);
+    }
+    if (phoneButton) {
+      phoneButton.dataset.demoAction = `De telefoonfunctie voor ${contactPerson.name} wordt in een volgende fase gekoppeld.`;
+      phoneButton.setAttribute("aria-label", `${contactPerson.phoneLabel}: ${contactPerson.name}`);
+      phoneButton.title = contactPerson.phoneLabel;
+    }
+  }
+
+  function renderInfoScreen(data) {
+    if (!data) return;
+
+    const today = new Date();
+    renderShellData(data);
+    setText("info-buyer-first-name", data.buyer.firstName);
+    setText("info-project-name", `Project ${data.project.name}`);
+    setTime(
+      "info-current-date",
+      localDateKey(today),
+      capitalize(formatDutchDate(today, { weekday: "long", day: "numeric", month: "long", year: "numeric" })),
+    );
+    renderCurrentUpdate(data.project, data.currentUpdate);
+    renderWeeklyStatus(data.weeklyStatus);
+    renderBuyerAction(data.actions);
+    renderImportantMoments(data.deadlines);
+    renderLatestNews(data.news);
+    renderDocuments(data.documents);
+    renderContactPerson(data.contactPerson);
+  }
+
   const routes = new Map([
     ["info", "Info"],
     ["tijdlijn", "Tijdlijn"],
@@ -226,5 +507,6 @@
   setupChatDemo();
   setupVideoFilters();
   setupVideoDialog();
+  renderInfoScreen(appData);
   renderRoute();
 })();

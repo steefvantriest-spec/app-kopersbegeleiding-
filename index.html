@@ -9,6 +9,7 @@
   <link rel="icon" href="./assets/app-icon.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.json">
   <link rel="stylesheet" href="./styles.css">
+  <script src="./data.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -75,6 +76,14 @@
       <path d="M14 4h6v6M20 4l-9 9"></path>
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
     </symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24">
+      <path d="M10.3 4.2 2.8 17.4A1.8 1.8 0 0 0 4.4 20h15.2a1.8 1.8 0 0 0 1.6-2.6L13.7 4.2a2 2 0 0 0-3.4 0Z"></path>
+      <path d="M12 9v4M12 16.5h.01"></path>
+    </symbol>
+    <symbol id="icon-mail" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+      <path d="m4 7 8 6 8-6"></path>
+    </symbol>
   </svg>
 
   <div class="app-shell">
@@ -85,11 +94,11 @@
 
       <div class="sidebar-project">
         <span class="eyebrow eyebrow--inverse">Uw project</span>
-        <strong>Elzenhagen Noordhof</strong>
-        <span>Woning 132</span>
+        <strong id="sidebar-project-name">Elzenhagen Noordhof</strong>
+        <span id="sidebar-dwelling-number">Woning 132</span>
         <div class="sidebar-project__status">
           <span class="status-dot" aria-hidden="true"></span>
-          Ruwbouw gestart
+          <span id="sidebar-project-status">Ruwbouw gestart</span>
         </div>
       </div>
 
@@ -128,142 +137,153 @@
         </div>
 
         <div class="topbar-project" aria-label="Huidige woning">
-          <strong>Woning 132</strong>
+          <strong id="topbar-dwelling-number">Woning 132</strong>
         </div>
 
         <div class="buyer-summary" aria-label="Ingelogd als Marieke de Vries">
-          <span class="buyer-summary__avatar" aria-hidden="true">MV</span>
+          <span id="buyer-summary-avatar" class="buyer-summary__avatar" aria-hidden="true">MV</span>
           <span class="buyer-summary__text">
             <small>Welkom</small>
-            <strong>Marieke de Vries</strong>
+            <strong id="buyer-summary-name">Marieke de Vries</strong>
           </span>
         </div>
       </header>
 
       <main id="main-content" class="main-content" tabindex="-1">
         <section class="app-view" data-view="info" aria-labelledby="info-title">
-          <header class="page-heading">
+          <header class="page-heading info-heading">
             <div>
               <span class="eyebrow">Overzicht</span>
-              <h1 id="info-title">Goedemiddag, Marieke</h1>
+              <h1 id="info-title">Goedemiddag, <span id="info-buyer-first-name">koper</span></h1>
               <p>Hier vindt u de belangrijkste informatie over uw woning en de voortgang van de bouw.</p>
             </div>
-            <span class="page-heading__date">Donderdag 27 augustus 2026</span>
+            <div class="page-heading__meta">
+              <strong id="info-project-name">Project</strong>
+              <time id="info-current-date" class="page-heading__date"></time>
+            </div>
           </header>
 
           <article class="feature-card" aria-labelledby="project-update-title">
             <div class="feature-card__content">
               <span class="card-kicker card-kicker--light">
                 <svg aria-hidden="true"><use href="#icon-bell"></use></svg>
-                Belangrijkste projectupdate
+                <span id="current-update-label">Projectupdate</span>
               </span>
-              <h2 id="project-update-title">De ruwbouw van uw woning is gestart</h2>
-              <p>De beganegrondvloer is gereed. Deze week start de aannemer met het plaatsen van de binnenwanden op de eerste verdieping.</p>
+              <h2 id="project-update-title">Projectupdate wordt geladen</h2>
+              <p id="current-update-summary"></p>
               <div class="feature-card__meta">
-                <span>Bijgewerkt op 25 augustus</span>
-                <button class="text-button text-button--light" type="button" data-demo-action="De volledige projectupdate wordt in een volgende fase toegevoegd.">
-                  Bekijk update
+                <time id="current-update-date"></time>
+                <button id="current-update-button" class="text-button text-button--light" type="button">
+                  <span id="current-update-button-label">Bekijk update</span>
                   <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
                 </button>
               </div>
             </div>
-            <div class="progress-panel" aria-label="Bouwvoortgang 43 procent">
-              <div class="progress-ring" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="43" aria-label="Bouwvoortgang 43 procent">
-                <span><strong>43%</strong><small>gereed</small></span>
+            <div id="project-progress-panel" class="progress-panel">
+              <div id="project-progress-ring" class="progress-ring" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                <span><strong id="project-progress-value">0%</strong><small>gereed</small></span>
               </div>
               <div>
                 <span class="progress-panel__label">Huidige fase</span>
-                <strong>Ruwbouw</strong>
-                <span>Fase 4 van 8</span>
+                <strong id="project-current-phase">–</strong>
+                <span id="project-phase-position">Fase – van –</span>
               </div>
             </div>
           </article>
 
-          <div class="dashboard-grid">
-            <article class="content-card status-card" aria-labelledby="actueel-title">
+          <div class="info-priority-grid">
+            <article class="content-card weekly-card" aria-labelledby="weekly-title">
               <div class="card-heading">
                 <span class="icon-tile"><svg aria-hidden="true"><use href="#icon-home"></use></svg></span>
                 <div>
-                  <span class="eyebrow">Actuele informatie</span>
-                  <h2 id="actueel-title">Uw woning deze week</h2>
+                  <span class="eyebrow">Actuele status</span>
+                  <h2 id="weekly-title">Uw woning deze week</h2>
                 </div>
               </div>
-              <ul class="check-list">
-                <li><svg aria-hidden="true"><use href="#icon-check"></use></svg><span>Beganegrondvloer is gereed</span></li>
-                <li><svg aria-hidden="true"><use href="#icon-check"></use></svg><span>Binnenwanden worden voorbereid</span></li>
-                <li class="check-list__current"><span class="status-dot" aria-hidden="true"></span><span>Controle leidingwerk op 2 september</span></li>
-              </ul>
+              <ul id="weekly-status-list" class="weekly-status-list"></ul>
+            </article>
+
+            <article id="buyer-action-card" class="content-card action-card" aria-labelledby="buyer-action-title">
+              <div class="action-card__header">
+                <span class="icon-tile action-card__icon"><svg aria-hidden="true"><use href="#icon-alert"></use></svg></span>
+                <span id="buyer-action-label" class="eyebrow">Actie nodig</span>
+              </div>
+              <h2 id="buyer-action-title">Actie wordt geladen</h2>
+              <p id="buyer-action-description"></p>
+              <div id="buyer-action-deadline" class="action-card__deadline">
+                <svg aria-hidden="true"><use href="#icon-clock"></use></svg>
+                <span><small>Deadline</small><time id="buyer-action-deadline-value"></time></span>
+              </div>
+              <button id="buyer-action-button" class="button button--primary button--full" type="button">Bekijk mijn keuzes</button>
+            </article>
+          </div>
+
+          <div class="info-secondary-grid">
+            <article class="content-card moments-card" aria-labelledby="moments-title">
+              <div class="card-heading">
+                <span class="icon-tile icon-tile--secondary"><svg aria-hidden="true"><use href="#icon-clock"></use></svg></span>
+                <div>
+                  <span class="eyebrow">Planning</span>
+                  <h2 id="moments-title">Belangrijke momenten</h2>
+                </div>
+              </div>
+              <ol id="important-moments-list" class="moment-list"></ol>
               <button class="text-button" type="button" data-route-target="tijdlijn">
-                Bekijk de volledige tijdlijn
+                Bekijk volledige tijdlijn
                 <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
               </button>
             </article>
 
-            <article class="content-card" aria-labelledby="deadlines-title">
-              <div class="card-heading card-heading--spread">
-                <div class="card-heading__title">
-                  <span class="icon-tile icon-tile--secondary"><svg aria-hidden="true"><use href="#icon-clock"></use></svg></span>
-                  <div>
-                    <span class="eyebrow">Deadlines</span>
-                    <h2 id="deadlines-title">Binnenkort belangrijk</h2>
-                  </div>
+            <article class="content-card news-card" aria-labelledby="news-title">
+              <div class="card-heading">
+                <span class="icon-tile"><svg aria-hidden="true"><use href="#icon-bell"></use></svg></span>
+                <div>
+                  <span class="eyebrow">Laatste nieuws</span>
+                  <h2 id="news-title">Nieuws uit uw project</h2>
                 </div>
-                <span class="count-badge">2 open</span>
               </div>
-              <ul class="deadline-list">
-                <li>
-                  <time datetime="2026-09-08"><strong>08</strong><span>sep</span></time>
-                  <div><strong>Controleer uw sanitairkeuzes</strong><span>Afhandelen in Huisinfo</span></div>
-                  <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
-                </li>
-                <li>
-                  <time datetime="2026-09-18"><strong>18</strong><span>sep</span></time>
-                  <div><strong>Bevestig elektrapunten</strong><span>Afhandelen in Huisinfo</span></div>
-                  <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
-                </li>
-              </ul>
-              <button class="button button--secondary button--full" type="button" data-demo-action="De koppeling met Huisinfo wordt in een latere fase toegevoegd.">
-                Naar Huisinfo
-                <svg aria-hidden="true"><use href="#icon-external"></use></svg>
+              <div id="latest-news" class="news-card__content">
+                <h3 id="latest-news-title"></h3>
+                <time id="latest-news-date"></time>
+                <p id="latest-news-summary"></p>
+              </div>
+              <button id="latest-news-button" class="text-button" type="button">
+                <span id="latest-news-button-label">Lees meer</span>
+                <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
               </button>
             </article>
+          </div>
 
-            <article class="content-card content-card--wide" aria-labelledby="documents-title">
+          <div class="info-support-grid">
+            <article class="content-card documents-card" aria-labelledby="documents-title">
               <div class="card-heading card-heading--spread">
                 <div class="card-heading__title">
                   <span class="icon-tile"><svg aria-hidden="true"><use href="#icon-document"></use></svg></span>
                   <div>
                     <span class="eyebrow">Documenten</span>
-                    <h2 id="documents-title">Recent toegevoegd</h2>
+                    <h2 id="documents-title">Belangrijke documenten</h2>
                   </div>
                 </div>
-                <button class="text-button" type="button" data-demo-action="Het complete documentenoverzicht wordt in een volgende fase toegevoegd.">Bekijk alles</button>
+                <button class="text-button" type="button" data-demo-action="Het complete documentenoverzicht wordt in een volgende fase toegevoegd.">Bekijk alle documenten</button>
               </div>
-              <div class="document-list">
-                <button class="document-row" type="button" data-demo-action="Dit is een voorbeelddocument en kan nog niet worden geopend.">
-                  <span class="document-row__icon">PDF</span>
-                  <span class="document-row__body"><strong>Bouwtekening woning 132</strong><small>Toegevoegd op 21 augustus 2026 · 2,4 MB</small></span>
-                  <svg aria-hidden="true"><use href="#icon-download"></use></svg>
-                </button>
-                <button class="document-row" type="button" data-demo-action="Dit is een voorbeelddocument en kan nog niet worden geopend.">
-                  <span class="document-row__icon">PDF</span>
-                  <span class="document-row__body"><strong>Planning bouwwerkzaamheden</strong><small>Bijgewerkt op 18 augustus 2026 · 840 KB</small></span>
-                  <svg aria-hidden="true"><use href="#icon-download"></use></svg>
-                </button>
-              </div>
+              <div id="important-documents-list" class="document-list"></div>
             </article>
 
             <article class="content-card contact-card" aria-labelledby="contact-title">
               <span class="eyebrow">Contact</span>
               <h2 id="contact-title">Uw kopersbegeleider</h2>
               <div class="contact-person">
-                <span class="contact-person__avatar" aria-hidden="true">LS</span>
-                <div><strong>Laura Smit</strong><span>Kopersbegeleider</span></div>
+                <span id="contact-initials" class="contact-person__avatar" aria-hidden="true">–</span>
+                <div><strong id="contact-name">Kopersbegeleider</strong><span id="contact-role"></span></div>
               </div>
-              <p>Heeft u een persoonlijke vraag? Laura helpt u graag verder.</p>
+              <p id="contact-introduction"></p>
               <div class="contact-card__actions">
                 <button class="button button--primary" type="button" data-route-target="vraag-het-ons">Stel een vraag</button>
-                <button class="icon-button" type="button" aria-label="Bel Laura Smit" data-demo-action="Bellen wordt gekoppeld zodra de definitieve contactgegevens bekend zijn.">
+                <button id="contact-email-button" class="button button--outline" type="button">
+                  <svg aria-hidden="true"><use href="#icon-mail"></use></svg>
+                  <span id="contact-email-label">E-mail</span>
+                </button>
+                <button id="contact-phone-button" class="icon-button" type="button" aria-label="Bel uw kopersbegeleider">
                   <svg aria-hidden="true"><use href="#icon-phone"></use></svg>
                 </button>
               </div>
