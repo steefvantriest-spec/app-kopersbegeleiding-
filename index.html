@@ -84,6 +84,14 @@
       <rect x="3" y="5" width="18" height="14" rx="3"></rect>
       <path d="m4 7 8 6 8-6"></path>
     </symbol>
+    <symbol id="icon-image" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+      <circle cx="9" cy="10" r="2"></circle>
+      <path d="m5 18 5-5 3 3 2-2 4 4"></path>
+    </symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24">
+      <path d="m8 10 4 4 4-4"></path>
+    </symbol>
   </svg>
 
   <div class="app-shell">
@@ -294,21 +302,21 @@
         <section class="app-view" data-view="tijdlijn" aria-labelledby="tijdlijn-title" hidden>
           <header class="page-heading page-heading--compact">
             <div>
-              <span class="eyebrow">Bouwproces</span>
-              <h1 id="tijdlijn-title">Tijdlijn van uw woning</h1>
-              <p>Volg stap voor stap waar de bouw staat en wat er hierna gebeurt.</p>
+              <span class="eyebrow">Bouwvoortgang</span>
+              <h1 id="tijdlijn-title">De bouw van uw woning</h1>
+              <p>Volg hier stap voor stap de voortgang van uw woning.</p>
             </div>
           </header>
 
           <section class="timeline-summary" aria-label="Samenvatting bouwvoortgang">
-            <div>
-              <span class="eyebrow eyebrow--inverse">Voortgang</span>
-              <strong>Ruwbouw is gestart</strong>
-              <span>Fase 4 van 8</span>
+            <div class="timeline-summary__phase">
+              <span class="eyebrow">Huidige fase</span>
+              <strong id="timeline-current-phase">–</strong>
+              <span id="timeline-phase-position">Fase – van –</span>
             </div>
             <div class="timeline-summary__progress">
-              <span><strong>43%</strong> van de bouw gereed</span>
-              <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="43" aria-label="Bouwvoortgang">
+              <span><span>Voortgang</span><strong id="timeline-overall-progress">0%</strong></span>
+              <div id="timeline-progress-bar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Bouwvoortgang">
                 <span></span>
               </div>
             </div>
@@ -319,81 +327,26 @@
             </div>
           </section>
 
-          <ol class="timeline" aria-label="Bouwfases">
-            <li class="timeline-item timeline-item--complete">
-              <div class="timeline-item__marker"><svg aria-hidden="true"><use href="#icon-check"></use></svg></div>
-              <article>
-                <span class="phase-status">Afgerond</span>
-                <div class="phase-heading"><span>01</span><h2>Voorbereiding</h2></div>
-                <p>Vergunningen, werktekeningen en de technische voorbereiding zijn afgerond.</p>
-                <time datetime="2026-03">Maart 2026</time>
-              </article>
-            </li>
-            <li class="timeline-item timeline-item--complete">
-              <div class="timeline-item__marker"><svg aria-hidden="true"><use href="#icon-check"></use></svg></div>
-              <article>
-                <span class="phase-status">Afgerond</span>
-                <div class="phase-heading"><span>02</span><h2>Start bouw</h2></div>
-                <p>De bouwplaats is ingericht en de officiële start van de bouw heeft plaatsgevonden.</p>
-                <time datetime="2026-04">April 2026</time>
-              </article>
-            </li>
-            <li class="timeline-item timeline-item--complete">
-              <div class="timeline-item__marker"><svg aria-hidden="true"><use href="#icon-check"></use></svg></div>
-              <article>
-                <span class="phase-status">Afgerond</span>
-                <div class="phase-heading"><span>03</span><h2>Fundering</h2></div>
-                <p>De funderingspalen, funderingsbalken en beganegrondvloer zijn aangebracht.</p>
-                <time datetime="2026-06">Mei – juni 2026</time>
-              </article>
-            </li>
-            <li class="timeline-item timeline-item--current" aria-current="step">
-              <div class="timeline-item__marker"><span></span></div>
-              <article>
-                <span class="phase-status">Huidige fase</span>
-                <div class="phase-heading"><span>04</span><h2>Ruwbouw</h2></div>
-                <p>De dragende wanden en verdiepingsvloeren worden geplaatst. Daarna wordt het hoogste punt bereikt.</p>
-                <time datetime="2026-08">Augustus – oktober 2026</time>
-                <div class="phase-note"><span class="status-dot" aria-hidden="true"></span>Werkzaamheden volgens planning</div>
-              </article>
-            </li>
-            <li class="timeline-item timeline-item--planned">
-              <div class="timeline-item__marker"><span>05</span></div>
-              <article>
-                <span class="phase-status">Gepland</span>
-                <div class="phase-heading"><span>05</span><h2>Gevel &amp; dak</h2></div>
-                <p>De gevelkozijnen, gevelafwerking en dakconstructie maken de woning wind- en waterdicht.</p>
-                <time datetime="2026-10">Verwacht vanaf oktober 2026</time>
-              </article>
-            </li>
-            <li class="timeline-item timeline-item--planned">
-              <div class="timeline-item__marker"><span>06</span></div>
-              <article>
-                <span class="phase-status">Gepland</span>
-                <div class="phase-heading"><span>06</span><h2>Installaties</h2></div>
-                <p>De installaties voor elektra, water, verwarming en ventilatie worden aangebracht.</p>
-                <time datetime="2026-12">Verwacht vanaf december 2026</time>
-              </article>
-            </li>
-            <li class="timeline-item timeline-item--planned">
-              <div class="timeline-item__marker"><span>07</span></div>
-              <article>
-                <span class="phase-status">Gepland</span>
-                <div class="phase-heading"><span>07</span><h2>Afbouw</h2></div>
-                <p>Binnenwanden, dekvloeren, tegelwerk en het gekozen meer- en minderwerk worden uitgevoerd.</p>
-                <time datetime="2027-02">Verwacht vanaf februari 2027</time>
-              </article>
-            </li>
-            <li class="timeline-item timeline-item--planned">
-              <div class="timeline-item__marker"><span>08</span></div>
-              <article>
-                <span class="phase-status">Gepland</span>
-                <div class="phase-heading"><span>08</span><h2>Oplevering</h2></div>
-                <p>Na de vooroplevering ontvangt u de sleutel van uw nieuwe woning.</p>
-                <time datetime="2027-05">Indicatie: mei 2027</time>
-              </article>
-            </li>
-          </ol>
+          <div class="timeline-section-heading">
+            <div>
+              <span id="timeline-phase-count-label" class="eyebrow">8 bouwfases</span>
+              <h2>Stap voor stap</h2>
+            </div>
+            <p>Kies een fase om de planning, updates en beschikbare informatie te bekijken.</p>
+          </div>
+
+          <ol id="timeline-phase-list" class="timeline" aria-label="Bouwfases"></ol>
+
+          <section class="timeline-completion-card" aria-labelledby="timeline-completion-title">
+            <span class="icon-tile icon-tile--secondary"><svg aria-hidden="true"><use href="#icon-home"></use></svg></span>
+            <div>
+              <span class="eyebrow">Planning</span>
+              <h2 id="timeline-completion-title">Verwachte oplevering</h2>
+              <strong id="timeline-expected-completion">–</strong>
+              <p id="timeline-completion-note"></p>
+            </div>
+            <span class="phase-badge">Verwachting</span>
+          </section>
         </section>
 
         <section class="app-view" data-view="vraag-het-ons" aria-labelledby="chat-title" hidden>
