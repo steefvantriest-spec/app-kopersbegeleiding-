@@ -274,7 +274,7 @@
           id: "find-documents",
           keywords: ["documenten", "bouwtekeningen", "handleiding", "bestanden"],
           question: "Waar vind ik mijn documenten?",
-          answerTemplate: "Belangrijke documenten vindt u op het Info-scherm en via Huisinfo.",
+          answerTemplate: "Belangrijke documenten vindt u op het Info-scherm en later ook via Huisinfo.",
           source: {
             label: "Kopershandleiding",
             detail: "Documenten",
