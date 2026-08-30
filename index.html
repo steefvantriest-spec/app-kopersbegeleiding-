@@ -10,6 +10,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="stylesheet" href="./styles.css">
   <script src="./data.js" defer></script>
+  <script src="./chat-service.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -222,7 +223,7 @@
                 <svg aria-hidden="true"><use href="#icon-clock"></use></svg>
                 <span><small>Deadline</small><time id="buyer-action-deadline-value"></time></span>
               </div>
-              <button id="buyer-action-button" class="button button--primary button--full" type="button">Bekijk mijn keuzes</button>
+              <a id="buyer-action-button" class="button button--primary button--full" target="_blank" rel="noopener noreferrer">Bekijk mijn keuzes</a>
             </article>
           </div>
 
@@ -350,82 +351,49 @@
         </section>
 
         <section class="app-view" data-view="vraag-het-ons" aria-labelledby="chat-title" hidden>
-          <header class="page-heading page-heading--compact">
+          <header class="page-heading page-heading--compact chat-page-heading">
             <div>
-              <span class="eyebrow">Digitale assistent</span>
-              <h1 id="chat-title">Vraag het ons</h1>
-              <p>Vind straks snel een antwoord in de informatie van uw project.</p>
+              <span class="eyebrow">Vraag het ons</span>
+              <h1 id="chat-title">Waar kunnen we u mee helpen?</h1>
+              <p>Stel uw vraag over uw woning, de bouw, planning, keuzes of Huisinfo.</p>
             </div>
-            <span class="phase-badge">Demo-interface</span>
+            <span class="phase-badge">Demo zonder AI</span>
           </header>
 
-          <div class="chat-layout">
-            <section class="chat-panel" aria-labelledby="conversation-title">
-              <header class="chat-panel__header">
-                <span class="assistant-avatar" aria-hidden="true"><svg><use href="#icon-chat"></use></svg></span>
-                <div>
-                  <h2 id="conversation-title">Assistent Kopersbegeleiding</h2>
-                  <span><i></i> Interfacevoorbeeld · nog niet gekoppeld</span>
-                </div>
-              </header>
-
-              <div id="chat-history" class="chat-history" aria-live="polite" aria-label="Chatgeschiedenis">
-                <article class="chat-message chat-message--assistant">
-                  <span class="chat-message__avatar" aria-hidden="true"><svg><use href="#icon-chat"></use></svg></span>
-                  <div>
-                    <span class="chat-message__sender">Assistent</span>
-                    <p>Goedemiddag Marieke. Waarmee kan ik u helpen over uw woning of het bouwproces?</p>
-                    <time datetime="2026-08-27T14:31">14:31</time>
-                  </div>
-                </article>
-                <article class="chat-message chat-message--user">
-                  <div>
-                    <span class="chat-message__sender">U</span>
-                    <p>Wanneer worden de kozijnen geplaatst?</p>
-                    <time datetime="2026-08-27T14:32">14:32</time>
-                  </div>
-                </article>
-                <article class="chat-message chat-message--assistant">
-                  <span class="chat-message__avatar" aria-hidden="true"><svg><use href="#icon-chat"></use></svg></span>
-                  <div>
-                    <span class="chat-message__sender">Assistent</span>
-                    <p>Volgens de voorbeeldplanning worden de kozijnen vanaf oktober geplaatst, tijdens de fase Gevel &amp; dak.</p>
-                    <span class="source-pill"><svg aria-hidden="true"><use href="#icon-document"></use></svg>Voorbeeldplanning bouw</span>
-                    <time datetime="2026-08-27T14:32">14:32</time>
-                  </div>
-                </article>
+          <section class="chat-experience" aria-labelledby="conversation-title">
+            <header class="chat-panel__header">
+              <span class="assistant-avatar" aria-hidden="true"><svg><use href="#icon-chat"></use></svg></span>
+              <div>
+                <h2 id="conversation-title">Kopersassistent</h2>
+                <span><i></i> Vaste demo-antwoorden · geen gegevens worden verstuurd</span>
               </div>
+              <button id="chat-reset" class="text-button chat-reset" type="button" hidden>Nieuw gesprek</button>
+            </header>
 
-              <form id="chat-form" class="chat-composer">
-                <label for="chat-input">Typ uw vraag</label>
-                <div class="chat-composer__field">
-                  <textarea id="chat-input" name="question" rows="2" maxlength="500" placeholder="Bijvoorbeeld: wanneer is de oplevering?"></textarea>
-                  <button class="button button--primary chat-send" type="submit">
-                    <span>Verstuur</span>
-                    <svg aria-hidden="true"><use href="#icon-send"></use></svg>
-                  </button>
-                </div>
-                <p>Deze visuele demo verstuurt geen gegevens en gebruikt nog geen AI.</p>
-              </form>
-            </section>
+            <div id="chat-history" class="chat-history">
+              <section id="chat-welcome" class="chat-welcome" aria-labelledby="chat-welcome-title">
+                <span class="chat-welcome__icon" aria-hidden="true"><svg><use href="#icon-chat"></use></svg></span>
+                <h2 id="chat-welcome-title">Hallo, waarmee kunnen we u helpen?</h2>
+                <p id="chat-welcome-text">Stel een vraag over uw woning, planning, keuzes of Huisinfo.</p>
+                <div id="chat-suggestions" class="chat-suggestions" aria-label="Voorbeeldvragen"></div>
+                <p id="chat-safety-note" class="chat-safety-note"></p>
+              </section>
 
-            <aside class="question-panel" aria-labelledby="examples-title">
-              <span class="icon-tile"><svg aria-hidden="true"><use href="#icon-chat"></use></svg></span>
-              <span class="eyebrow">Snel beginnen</span>
-              <h2 id="examples-title">Voorbeeldvragen</h2>
-              <p>Kies een voorbeeld of typ zelf een vraag in het tekstveld.</p>
-              <div class="example-questions">
-                <button type="button" data-example-question="Wanneer is de verwachte oplevering?">Wanneer is de verwachte oplevering?<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-                <button type="button" data-example-question="Waar vind ik mijn bouwtekeningen?">Waar vind ik mijn bouwtekeningen?<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-                <button type="button" data-example-question="Tot wanneer kan ik keuzes doorgeven?">Tot wanneer kan ik keuzes doorgeven?<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-                <button type="button" data-example-question="Wat gebeurt er tijdens de ruwbouw?">Wat gebeurt er tijdens de ruwbouw?<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
+              <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Chatgeschiedenis" tabindex="-1"></div>
+            </div>
+
+            <form id="chat-form" class="chat-composer">
+              <label for="chat-input">Typ uw vraag</label>
+              <div class="chat-composer__field">
+                <textarea id="chat-input" name="question" rows="1" maxlength="500" placeholder="Typ uw vraag..." aria-describedby="chat-input-note"></textarea>
+                <button class="button button--primary chat-send" type="submit">
+                  <span>Verstuur</span>
+                  <svg aria-hidden="true"><use href="#icon-send"></use></svg>
+                </button>
               </div>
-              <div class="question-panel__notice">
-                <strong>Persoonlijke hulp nodig?</strong>
-                <span>Neem dan contact op met uw kopersbegeleider.</span>
-              </div>
-            </aside>
-          </div>
+              <p id="chat-input-note">Enter verstuurt · Shift+Enter maakt een nieuwe regel · deze demo gebruikt geen AI.</p>
+            </form>
+          </section>
         </section>
 
         <section class="app-view" data-view="videos" aria-labelledby="videos-title" hidden>

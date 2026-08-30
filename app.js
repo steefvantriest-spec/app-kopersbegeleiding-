@@ -6,6 +6,7 @@
   }
 
   const appData = window.KOPERS_APP_DATA;
+  const chatService = window.KOPERS_CHAT_SERVICE;
 
   function elementById(id) {
     return document.getElementById(id);
@@ -29,6 +30,23 @@
     if (className) element.className = className;
     if (text !== undefined) element.textContent = text;
     return element;
+  }
+
+  function configureHuisinfoLink(link, label, { withIcon = false } = {}) {
+    if (!link || !appData?.config?.huisinfoUrl) return link;
+
+    link.href = appData.config.huisinfoUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.setAttribute("aria-label", `${label} (opent in een nieuw tabblad)`);
+
+    if (withIcon) link.append(iconUse("icon-external"));
+    return link;
+  }
+
+  function createHuisinfoLink(label, className) {
+    const link = createElement("a", className, label);
+    return configureHuisinfoLink(link, label, { withIcon: true });
   }
 
   function parseLocalDate(value) {
@@ -150,6 +168,7 @@
       setText("buyer-action-description", "U bent helemaal bij. Zodra er iets van u nodig is, ziet u dat hier.");
       deadline.hidden = true;
       button.hidden = true;
+      button.removeAttribute("href");
       if (icon) icon.setAttribute("href", "#icon-check");
       return;
     }
@@ -159,7 +178,7 @@
     setText("buyer-action-description", action.description);
     setTime("buyer-action-deadline-value", action.deadline, action.deadlineLabel);
     button.textContent = action.buttonLabel;
-    button.dataset.demoAction = "De koppeling met Huisinfo wordt in een volgende fase toegevoegd.";
+    configureHuisinfoLink(button, action.buttonLabel);
     deadline.hidden = false;
     button.hidden = false;
     if (icon) icon.setAttribute("href", "#icon-alert");
@@ -427,7 +446,7 @@
     const deadlineText = createElement("span");
     const deadlineLabel = createElement("small", "", "Deadline");
     const deadlineTime = createElement("time", "", action.deadlineLabel);
-    const button = createElement("button", "button button--primary", action.buttonLabel);
+    const button = createHuisinfoLink(action.buttonLabel, "button button--primary");
 
     icon.setAttribute("aria-hidden", "true");
     icon.append(iconUse("icon-alert"));
@@ -435,8 +454,6 @@
     deadlineTime.dateTime = action.deadline;
     deadlineText.append(deadlineLabel, deadlineTime);
     deadline.append(iconUse("icon-clock"), deadlineText);
-    button.type = "button";
-    button.dataset.demoAction = "De koppeling met Huisinfo wordt in een volgende fase toegevoegd.";
     section.append(heading, title, description, deadline, button);
     return section;
   }
@@ -616,15 +633,59 @@
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }
 
+  function currentHashState() {
+    const [routeValue = "", query = ""] = window.location.hash.slice(1).split("?");
+    const normalizedRoute = routeValue.toLowerCase();
+    return {
+      route: routes.has(normalizedRoute) ? normalizedRoute : "info",
+      params: new URLSearchParams(query),
+      isValid: routes.has(normalizedRoute),
+    };
+  }
+
   function currentRoute() {
-    const route = window.location.hash.slice(1).toLowerCase();
-    return routes.has(route) ? route : "info";
+    return currentHashState().route;
+  }
+
+  function applyRouteContext(route, params) {
+    const videosView = document.querySelector('[data-view="videos"]');
+    if (videosView) {
+      const videoId = route === "videos" ? params.get("video") : "";
+      if (videoId) videosView.dataset.requestedVideo = videoId;
+      else delete videosView.dataset.requestedVideo;
+    }
+
+    let target;
+    if (route === "tijdlijn" && params.get("phase")) {
+      const phaseItem = Array.from(document.querySelectorAll("[data-phase-id]")).find(
+        (item) => item.dataset.phaseId === params.get("phase"),
+      );
+      const button = phaseItem?.querySelector(".timeline-phase__toggle");
+      if (button?.getAttribute("aria-expanded") === "false") button.click();
+      target = phaseItem;
+    }
+
+    if (route === "info" && params.get("section") === "documents") {
+      target = elementById("documents-title")?.closest("article");
+    }
+    if (route === "info" && params.get("section") === "contact") {
+      target = elementById("contact-title")?.closest("article");
+    }
+
+    if (target) {
+      window.setTimeout(() => {
+        target.scrollIntoView({
+          block: "start",
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        });
+      }, 100);
+    }
   }
 
   function renderRoute({ moveFocus = false } = {}) {
-    const route = currentRoute();
+    const { route, params, isValid } = currentHashState();
 
-    if (window.location.hash !== `#${route}`) {
+    if (!isValid) {
       window.history.replaceState(null, "", `#${route}`);
     }
 
@@ -645,21 +706,29 @@
     resetPageScroll();
     window.requestAnimationFrame(resetPageScroll);
     window.setTimeout(resetPageScroll, 50);
+    applyRouteContext(route, params);
 
     if (moveFocus && mainContent) {
       mainContent.focus({ preventScroll: true });
     }
   }
 
-  function navigateTo(route) {
+  function navigateTo(route, params = {}) {
     if (!routes.has(route)) return;
 
-    if (currentRoute() === route && window.location.hash === `#${route}`) {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") query.set(key, value);
+    });
+    const queryString = query.toString();
+    const targetHash = `#${route}${queryString ? `?${queryString}` : ""}`;
+
+    if (window.location.hash === targetHash) {
       renderRoute({ moveFocus: true });
       return;
     }
 
-    window.location.hash = route;
+    window.location.hash = targetHash;
   }
 
   function showToast(message) {
@@ -690,54 +759,213 @@
     }).format(new Date());
   }
 
-  function appendChatMessage({ sender, message, isUser = false }) {
-    const history = document.querySelector("#chat-history");
+  function scrollChatToBottom() {
+    const history = elementById("chat-history");
     if (!history) return;
 
-    const article = document.createElement("article");
-    article.className = `chat-message chat-message--${isUser ? "user" : "assistant"}`;
+    window.requestAnimationFrame(() => {
+      history.scrollTo({
+        top: history.scrollHeight,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    });
+  }
 
+  function createChatAction(action) {
+    if (action.type === "huisinfo") {
+      const link = createHuisinfoLink(action.label, "button button--outline chat-action");
+      link.dataset.chatActionType = action.type;
+      return link;
+    }
+
+    const icons = {
+      timeline: "icon-timeline",
+      video: "icon-video",
+      documents: "icon-document",
+      contact: "icon-contact",
+      faq: "icon-info",
+    };
+    const button = createElement("button", "button button--outline chat-action", action.label);
+    button.type = "button";
+    button.dataset.chatActionType = action.type;
+    if (action.target) button.dataset.chatActionTarget = action.target;
+    button.append(iconUse(icons[action.type] || "icon-arrow"));
+    return button;
+  }
+
+  function createChatSource(source) {
+    const sourcePill = createElement("span", "source-pill");
+    const detail = source.detail ? ` — ${source.detail}` : "";
+    sourcePill.append(
+      iconUse("icon-document"),
+      createElement("span", "", `Bron: ${source.label}${detail}`),
+    );
+    return sourcePill;
+  }
+
+  function appendChatMessage({ role, text, source = null, actions = [], responseId = "" }) {
+    const messages = elementById("chat-messages");
+    if (!messages) return;
+
+    const isUser = role === "user";
+    const article = createElement("article", `chat-message chat-message--${isUser ? "user" : "assistant"}`);
+    const body = createElement("div", "chat-message__content");
+    const senderLabel = createElement("span", "chat-message__sender", isUser ? "U" : "Assistent");
+    const bubble = createElement("div", "chat-message__bubble");
+    const paragraph = createElement("p", "", text);
+    const time = createElement("time", "", timestamp());
+
+    if (responseId) article.dataset.responseId = responseId;
     if (!isUser) {
-      const avatar = document.createElement("span");
-      avatar.className = "chat-message__avatar";
+      const avatar = createElement("span", "chat-message__avatar");
       avatar.setAttribute("aria-hidden", "true");
       avatar.append(iconUse("icon-chat"));
       article.append(avatar);
     }
 
-    const body = document.createElement("div");
-    const senderLabel = document.createElement("span");
-    const paragraph = document.createElement("p");
-    const time = document.createElement("time");
+    bubble.append(paragraph);
+    if (source) bubble.append(createChatSource(source));
+    if (actions.length) {
+      const actionsContainer = createElement("div", "chat-message__actions");
+      actions.forEach((action) => actionsContainer.append(createChatAction(action)));
+      bubble.append(actionsContainer);
+    }
 
-    senderLabel.className = "chat-message__sender";
-    senderLabel.textContent = sender;
-    paragraph.textContent = message;
-    time.textContent = timestamp();
     time.dateTime = new Date().toISOString();
-
-    body.append(senderLabel, paragraph, time);
+    body.append(senderLabel, bubble, time);
     article.append(body);
-    history.append(article);
-    history.scrollTo({ top: history.scrollHeight, behavior: "smooth" });
+    messages.append(article);
+    scrollChatToBottom();
+  }
+
+  function createChatSuggestionButton(suggestion) {
+    const button = createElement("button", "chat-suggestion");
+    button.type = "button";
+    button.dataset.chatSuggestion = suggestion.id;
+    button.dataset.chatQuestion = suggestion.label;
+    button.dataset.chatResponseId = suggestion.responseId;
+    button.append(createElement("span", "", suggestion.label), iconUse("icon-arrow"));
+    return button;
+  }
+
+  function renderChatSuggestions(container, suggestions) {
+    if (!container) return;
+    container.replaceChildren(...suggestions.map(createChatSuggestionButton));
+  }
+
+  function showFaqSuggestions() {
+    const messages = elementById("chat-messages");
+    if (!messages) return;
+
+    messages.querySelector(".chat-faq-suggestions")?.remove();
+    const section = createElement("section", "chat-faq-suggestions");
+    const title = createElement("h3", "", "Veelgestelde vragen");
+    const text = createElement("p", "", "Kies een vraag om een gecontroleerd demo-antwoord te bekijken.");
+    const suggestions = createElement("div", "chat-suggestions chat-suggestions--compact");
+    renderChatSuggestions(suggestions, appData.chatDemo.suggestions);
+    section.append(title, text, suggestions);
+    messages.append(section);
+    scrollChatToBottom();
+  }
+
+  function handleChatAction(button) {
+    const type = button.dataset.chatActionType;
+    const target = button.dataset.chatActionTarget || "";
+    const handlers = {
+      timeline: () => navigateTo("tijdlijn", { phase: target }),
+      video: () => navigateTo("videos", { video: target }),
+      documents: () => navigateTo("info", { section: "documents" }),
+      contact: () => navigateTo("info", { section: "contact" }),
+      faq: showFaqSuggestions,
+    };
+    handlers[type]?.();
   }
 
   function setupChatDemo() {
-    const form = document.querySelector("#chat-form");
-    const input = document.querySelector("#chat-input");
-    if (!form || !input) return;
+    const experience = document.querySelector(".chat-experience");
+    const form = elementById("chat-form");
+    const input = elementById("chat-input");
+    const sendButton = form?.querySelector(".chat-send");
+    const messages = elementById("chat-messages");
+    const welcome = elementById("chat-welcome");
+    const resetButton = elementById("chat-reset");
+    if (!experience || !form || !input || !sendButton || !messages || !welcome || !resetButton) return;
 
-    document.querySelectorAll("[data-example-question]").forEach((button) => {
-      button.addEventListener("click", () => {
-        input.value = button.dataset.exampleQuestion || "";
-        input.focus();
-      });
+    const chatState = { isSending: false };
+    setText("chat-welcome-title", appData.chatDemo.welcomeMessage.title);
+    setText("chat-welcome-text", appData.chatDemo.welcomeMessage.text);
+    setText("chat-safety-note", appData.chatDemo.welcomeMessage.safetyNote);
+    renderChatSuggestions(elementById("chat-suggestions"), appData.chatDemo.suggestions);
+
+    function resizeInput() {
+      input.style.height = "auto";
+      input.style.height = `${Math.min(input.scrollHeight, 144)}px`;
+    }
+
+    function resetConversation() {
+      messages.replaceChildren();
+      welcome.hidden = false;
+      resetButton.hidden = true;
+      input.value = "";
+      input.setCustomValidity("");
+      resizeInput();
+      elementById("chat-history")?.scrollTo({ top: 0, behavior: "auto" });
+      input.focus();
+    }
+
+    async function sendChatQuestion(question, responseId = "") {
+      const cleanQuestion = String(question || "").trim();
+      if (!cleanQuestion || chatState.isSending) return;
+
+      chatState.isSending = true;
+      sendButton.disabled = true;
+      messages.setAttribute("aria-busy", "true");
+      welcome.hidden = true;
+      resetButton.hidden = false;
+      messages.querySelector(".chat-faq-suggestions")?.remove();
+      appendChatMessage({ role: "user", text: cleanQuestion });
+      input.value = "";
+      resizeInput();
+
+      try {
+        const response = await chatService.sendMessage(cleanQuestion, { responseId });
+        appendChatMessage({
+          role: "assistant",
+          text: response.answer,
+          source: response.source,
+          actions: response.actions,
+          responseId: response.id,
+        });
+      } catch {
+        appendChatMessage({
+          role: "assistant",
+          text: appData.chatDemo.fallbackResponse.answerTemplate,
+          actions: appData.chatDemo.fallbackResponse.actions,
+          responseId: appData.chatDemo.fallbackResponse.id,
+        });
+      } finally {
+        chatState.isSending = false;
+        sendButton.disabled = false;
+        messages.removeAttribute("aria-busy");
+        if (responseId) messages.focus({ preventScroll: true });
+        else input.focus({ preventScroll: true });
+      }
+    }
+
+    experience.addEventListener("click", (event) => {
+      const suggestion = event.target.closest("[data-chat-suggestion]");
+      if (suggestion) {
+        void sendChatQuestion(suggestion.dataset.chatQuestion, suggestion.dataset.chatResponseId);
+        return;
+      }
+
+      const action = event.target.closest("button[data-chat-action-type]");
+      if (action) handleChatAction(action);
     });
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const question = input.value.trim();
-
       if (!question) {
         input.setCustomValidity("Typ eerst een vraag.");
         input.reportValidity();
@@ -745,16 +973,22 @@
       }
 
       input.setCustomValidity("");
-      appendChatMessage({ sender: "U", message: question, isUser: true });
-      input.value = "";
-
-      appendChatMessage({
-        sender: "Assistent",
-        message: "Deze visuele demo is nog niet gekoppeld aan projectinformatie of AI. Uw vraag is daarom alleen lokaal in dit scherm getoond.",
-      });
+      void sendChatQuestion(question);
     });
 
-    input.addEventListener("input", () => input.setCustomValidity(""));
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        if (typeof form.requestSubmit === "function") form.requestSubmit();
+        else sendButton.click();
+      }
+    });
+    input.addEventListener("input", () => {
+      input.setCustomValidity("");
+      resizeInput();
+    });
+    resetButton.addEventListener("click", resetConversation);
+    resizeInput();
   }
 
   function setupVideoFilters() {
@@ -808,7 +1042,12 @@
 
   document.addEventListener("click", (event) => {
     const routeButton = event.target.closest("[data-route-target]");
-    if (routeButton) navigateTo(routeButton.dataset.routeTarget);
+    if (routeButton) {
+      const params = {};
+      if (routeButton.dataset.videoId) params.video = routeButton.dataset.videoId;
+      if (routeButton.dataset.phaseId) params.phase = routeButton.dataset.phaseId;
+      navigateTo(routeButton.dataset.routeTarget, params);
+    }
 
     const demoButton = event.target.closest("[data-demo-action]");
     if (demoButton) showToast(demoButton.dataset.demoAction);

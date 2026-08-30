@@ -8,6 +8,9 @@
   }
 
   window.KOPERS_APP_DATA = deepFreeze({
+    config: {
+      huisinfoUrl: "https://slokker.huisinfo.nl/login",
+    },
     project: {
       id: "elzenhagen-noordhof",
       name: "Elzenhagen Noordhof",
@@ -126,6 +129,191 @@
       emailLabel: "E-mail",
       phoneLabel: "Bellen",
     },
+    chatDemo: {
+      welcomeMessage: {
+        title: "Hallo, waarmee kunnen we u helpen?",
+        text: "Stel een vraag over uw woning, planning, keuzes of Huisinfo.",
+        safetyNote: "Deze demo gebruikt alleen vooraf gecontroleerde antwoorden. Voor formele keuzes en berichten verwijzen we u naar Huisinfo.",
+      },
+      suggestions: [
+        {
+          id: "suggestion-completion",
+          responseId: "expected-completion",
+          label: "Wanneer wordt mijn woning opgeleverd?",
+        },
+        {
+          id: "suggestion-choices",
+          responseId: "housing-choices",
+          label: "Waar kan ik mijn woningkeuzes bekijken?",
+        },
+        {
+          id: "suggestion-huisinfo",
+          responseId: "how-huisinfo-works",
+          label: "Hoe werkt Huisinfo?",
+        },
+        {
+          id: "suggestion-choice-deadline",
+          responseId: "rough-build-choice-deadline",
+          label: "Wanneer moet ik mijn ruwbouwkeuzes doorgeven?",
+        },
+        {
+          id: "suggestion-documents",
+          responseId: "find-documents",
+          label: "Waar vind ik mijn documenten?",
+        },
+        {
+          id: "suggestion-rough-build",
+          responseId: "rough-build-explanation",
+          label: "Wat gebeurt er tijdens de ruwbouw?",
+        },
+      ],
+      responses: [
+        {
+          id: "rough-build-choice-deadline",
+          keywords: ["ruwbouwkeuzes", "keuzes doorgeven", "deadline keuzes", "wanneer keuzes"],
+          question: "Wanneer moet ik mijn ruwbouwkeuzes doorgeven?",
+          answerTemplate: "Uw ruwbouwkeuzes kunnen tot {{ruwbouwChoicesDeadline}} worden gecontroleerd. Voor formele wijzigingen en bevestiging gebruikt u Huisinfo.",
+          source: {
+            label: "Projectplanning",
+            detail: "Deadline ruwbouwkeuzes",
+          },
+          actions: [
+            {
+              type: "huisinfo",
+              label: "Bekijk mijn keuzes",
+            },
+            {
+              type: "timeline",
+              label: "Bekijk tijdlijn",
+              target: "ruwbouw",
+            },
+          ],
+        },
+        {
+          id: "expected-completion",
+          keywords: ["opgeleverd", "oplevering", "opleverdatum", "wanneer is mijn woning klaar"],
+          question: "Wanneer wordt mijn woning opgeleverd?",
+          answerTemplate: "De huidige verwachting is dat uw woning in {{expectedCompletion}} wordt opgeleverd. {{expectedCompletionNote}}",
+          source: {
+            label: "Projectplanning",
+            detail: "Indicatieve oplevering",
+          },
+          actions: [
+            {
+              type: "timeline",
+              label: "Bekijk tijdlijn",
+              target: "oplevering",
+            },
+          ],
+        },
+        {
+          id: "how-huisinfo-works",
+          keywords: ["hoe werkt huisinfo", "huisinfo gebruiken", "wat is huisinfo"],
+          question: "Hoe werkt Huisinfo?",
+          answerTemplate: "Huisinfo gebruikt u voor formele woninginformatie, documenten, keuzes en berichten. In deze app vindt u uitleg over hoe Huisinfo werkt.",
+          source: {
+            label: "FAQ Huisinfo",
+            detail: null,
+          },
+          actions: [
+            {
+              type: "video",
+              label: "Bekijk uitlegvideo",
+              target: "huisinfo-uitleg",
+            },
+            {
+              type: "huisinfo",
+              label: "Open Huisinfo",
+            },
+          ],
+        },
+        {
+          id: "housing-choices",
+          keywords: ["woningkeuzes", "mijn keuzes", "keuzes bekijken", "keuzes wijzigen"],
+          question: "Waar kan ik mijn woningkeuzes bekijken?",
+          answerTemplate: "Uw woningkeuzes worden beheerd in Huisinfo. U kunt daar uw keuzes bekijken en, wanneer toegestaan, wijzigen of bevestigen.",
+          source: {
+            label: "FAQ Huisinfo",
+            detail: "Woningkeuzes",
+          },
+          actions: [
+            {
+              type: "huisinfo",
+              label: "Open Huisinfo",
+            },
+            {
+              type: "video",
+              label: "Bekijk uitlegvideo",
+              target: "huisinfo-keuzes",
+            },
+          ],
+        },
+        {
+          id: "rough-build-explanation",
+          keywords: ["ruwbouw", "binnenwanden", "draagconstructie"],
+          question: "Wat gebeurt er tijdens de ruwbouw?",
+          answerTemplate: "Tijdens de ruwbouw wordt de draagconstructie van uw woning opgebouwd. Denk aan vloeren, binnenwanden en andere constructieve onderdelen.",
+          source: {
+            label: "Kopershandleiding",
+            detail: "Bouwfase ruwbouw",
+          },
+          actions: [
+            {
+              type: "timeline",
+              label: "Bekijk huidige fase",
+              target: "ruwbouw",
+            },
+            {
+              type: "video",
+              label: "Bekijk uitlegvideo",
+              target: "ruwbouw-uitleg",
+            },
+          ],
+        },
+        {
+          id: "find-documents",
+          keywords: ["documenten", "bouwtekeningen", "handleiding", "bestanden"],
+          question: "Waar vind ik mijn documenten?",
+          answerTemplate: "Belangrijke documenten vindt u op het Info-scherm en via Huisinfo.",
+          source: {
+            label: "Kopershandleiding",
+            detail: "Documenten",
+          },
+          actions: [
+            {
+              type: "documents",
+              label: "Bekijk documenten",
+              target: "documents",
+            },
+            {
+              type: "huisinfo",
+              label: "Open Huisinfo",
+            },
+          ],
+        },
+      ],
+      fallbackResponse: {
+        id: "fallback",
+        answerTemplate: "Op dit moment kan ik deze vraag nog niet automatisch beantwoorden. In de definitieve versie zoek ik hiervoor in de FAQ en projectdocumentatie.",
+        source: null,
+        actions: [
+          {
+            type: "faq",
+            label: "Bekijk veelgestelde vragen",
+          },
+          {
+            type: "video",
+            label: "Bekijk uitlegvideo's",
+            target: "all",
+          },
+          {
+            type: "contact",
+            label: "Neem contact op",
+            target: "contact",
+          },
+        ],
+      },
+    },
     timeline: {
       phases: [
         {
@@ -196,7 +384,7 @@
           id: "ruwbouw",
           number: 4,
           title: "Ruwbouw",
-          description: "De draagconstructie, vloeren en binnenwanden worden opgebouwd.",
+          description: "De draagconstructie van uw woning wordt opgebouwd. De beganegrondvloer is gereed en de binnenwanden worden voorbereid.",
           status: "current",
           startDate: "2026-08-12",
           expectedEndDate: "2026-10-16",
