@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#005CA3">
   <meta name="description" content="Volg de bouw van uw woning, bekijk documenten en vind uitleg op één centrale plek.">
   <title>Info | Slokker Kopersbegeleiding</title>
-  <link rel="icon" href="./assets/app-icon.svg" type="image/svg+xml">
+  <link rel="icon" href="./assets/icons/app-icon.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./styles.css">
-  <script src="./data.js" defer></script>
-  <script src="./chat-service.js" defer></script>
-  <script src="./app.js" defer></script>
+  <link rel="stylesheet" href="./css/styles.css">
+  <script src="./js/data.js" defer></script>
+  <script src="./js/chat-service.js" defer></script>
+  <script src="./js/app.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Ga direct naar de inhoud</a>
@@ -93,12 +93,16 @@
     <symbol id="icon-chevron" viewBox="0 0 24 24">
       <path d="m8 10 4 4 4-4"></path>
     </symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24">
+      <circle cx="10.5" cy="10.5" r="6.5"></circle>
+      <path d="m15.5 15.5 5 5"></path>
+    </symbol>
   </svg>
 
   <div class="app-shell">
     <aside class="sidebar" aria-label="Applicatiezijbalk">
       <div class="brand">
-        <img class="brand__logo" src="./assets/slokker-logo.png" alt="Slokker">
+        <img class="brand__logo" src="./assets/images/slokker-logo.png" alt="Slokker">
       </div>
 
       <div class="sidebar-project">
@@ -142,7 +146,7 @@
     <div class="app-frame">
       <header class="topbar">
         <div class="brand brand--mobile">
-          <img class="brand__logo" src="./assets/slokker-logo.png" alt="Slokker">
+          <img class="brand__logo" src="./assets/images/slokker-logo.png" alt="Slokker">
         </div>
 
         <div class="topbar-project" aria-label="Huidige woning">
@@ -399,87 +403,50 @@
         <section class="app-view" data-view="videos" aria-labelledby="videos-title" hidden>
           <header class="page-heading page-heading--compact">
             <div>
-              <span class="eyebrow">Kennisbank</span>
-              <h1 id="videos-title">Video's &amp; uitleg</h1>
-              <p>Bekijk korte en duidelijke uitleg over het bouwproces, uw keuzes en de oplevering.</p>
+              <span class="eyebrow">Video's &amp; uitleg</span>
+              <h1 id="videos-title">Hulp bij uw woning en Huisinfo</h1>
+              <p>Bekijk uitleg over het kopersproces, uw woning en het gebruik van Huisinfo.</p>
             </div>
           </header>
 
-          <div class="filter-bar" aria-label="Filter video's op categorie">
-            <button type="button" class="filter-chip is-active" data-video-filter="all" aria-pressed="true">Alles</button>
-            <button type="button" class="filter-chip" data-video-filter="huisinfo" aria-pressed="false">Huisinfo</button>
-            <button type="button" class="filter-chip" data-video-filter="keuzes" aria-pressed="false">Keuzes</button>
-            <button type="button" class="filter-chip" data-video-filter="planning" aria-pressed="false">Planning</button>
-            <button type="button" class="filter-chip" data-video-filter="documenten" aria-pressed="false">Documenten</button>
-            <button type="button" class="filter-chip" data-video-filter="oplevering" aria-pressed="false">Oplevering</button>
+          <section class="video-library-controls" aria-label="Video's zoeken en filteren">
+            <label class="video-search" for="video-search-input">
+              <span>Zoeken</span>
+              <span class="video-search__field">
+                <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+                <input id="video-search-input" type="search" autocomplete="off" placeholder="Zoek naar een onderwerp...">
+              </span>
+            </label>
+
+            <div class="video-filter-group">
+              <span class="video-filter-label">Categorie</span>
+              <div class="filter-bar" aria-label="Filter video's op categorie">
+                <button type="button" class="filter-chip is-active" data-video-filter="all" aria-pressed="true">Alles</button>
+                <button type="button" class="filter-chip" data-video-filter="kopersbegeleiding" aria-pressed="false">Kopersbegeleiding</button>
+                <button type="button" class="filter-chip" data-video-filter="huisinfo" aria-pressed="false">Huisinfo</button>
+              </div>
+            </div>
+
+            <label class="video-topic-filter" for="video-tag-filter">
+              <span>Onderwerp</span>
+              <select id="video-tag-filter">
+                <option value="all">Alle onderwerpen</option>
+              </select>
+            </label>
+          </section>
+
+          <div class="video-library-summary">
+            <p id="video-result-count" role="status" aria-live="polite">Video's worden geladen…</p>
           </div>
 
-          <div class="video-grid" aria-live="polite">
-            <article class="video-card" data-video-category="huisinfo">
-              <div class="video-card__thumbnail video-card__thumbnail--huisinfo">
-                <span class="video-duration">2:48</span>
-                <span class="play-mark" aria-hidden="true"><svg><use href="#icon-video"></use></svg></span>
-              </div>
-              <div class="video-card__body">
-                <span class="category-label">Huisinfo</span>
-                <h2>Zo werkt uw persoonlijke Huisinfo-omgeving</h2>
-                <p>Een korte rondleiding langs uw keuzes, berichten en openstaande acties.</p>
-                <button class="button button--outline button--full" type="button" data-video-title="Zo werkt uw persoonlijke Huisinfo-omgeving" data-video-category-label="Huisinfo">Bekijk uitleg<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-              </div>
-            </article>
+          <div id="video-grid" class="video-grid"></div>
 
-            <article class="video-card" data-video-category="keuzes">
-              <div class="video-card__thumbnail video-card__thumbnail--keuzes">
-                <span class="video-duration">3:15</span>
-                <span class="play-mark" aria-hidden="true"><svg><use href="#icon-video"></use></svg></span>
-              </div>
-              <div class="video-card__body">
-                <span class="category-label">Keuzes</span>
-                <h2>Meer- en minderwerk stap voor stap</h2>
-                <p>Bekijk wanneer u keuzes maakt en waar u op moet letten bij het doorgeven.</p>
-                <button class="button button--outline button--full" type="button" data-video-title="Meer- en minderwerk stap voor stap" data-video-category-label="Keuzes">Bekijk uitleg<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-              </div>
-            </article>
-
-            <article class="video-card" data-video-category="planning">
-              <div class="video-card__thumbnail video-card__thumbnail--planning">
-                <span class="video-duration">4:02</span>
-                <span class="play-mark" aria-hidden="true"><svg><use href="#icon-video"></use></svg></span>
-              </div>
-              <div class="video-card__body">
-                <span class="category-label">Planning</span>
-                <h2>Van fundering tot een winddichte woning</h2>
-                <p>Ontdek welke stappen bij de ruwbouw horen en hoe de planning tot stand komt.</p>
-                <button class="button button--outline button--full" type="button" data-video-title="Van fundering tot een winddichte woning" data-video-category-label="Planning">Bekijk uitleg<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-              </div>
-            </article>
-
-            <article class="video-card" data-video-category="documenten">
-              <div class="video-card__thumbnail video-card__thumbnail--documenten">
-                <span class="video-duration">2:21</span>
-                <span class="play-mark" aria-hidden="true"><svg><use href="#icon-video"></use></svg></span>
-              </div>
-              <div class="video-card__body">
-                <span class="category-label">Documenten</span>
-                <h2>Uw tekeningen en documenten terugvinden</h2>
-                <p>Zo herkent u de laatste versie van een tekening, planning of verslag.</p>
-                <button class="button button--outline button--full" type="button" data-video-title="Uw tekeningen en documenten terugvinden" data-video-category-label="Documenten">Bekijk uitleg<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-              </div>
-            </article>
-
-            <article class="video-card" data-video-category="oplevering">
-              <div class="video-card__thumbnail video-card__thumbnail--oplevering">
-                <span class="video-duration">5:10</span>
-                <span class="play-mark" aria-hidden="true"><svg><use href="#icon-video"></use></svg></span>
-              </div>
-              <div class="video-card__body">
-                <span class="category-label">Oplevering</span>
-                <h2>Wat kunt u verwachten bij de oplevering?</h2>
-                <p>Bereid u rustig voor op de vooroplevering, sleuteloverdracht en nazorg.</p>
-                <button class="button button--outline button--full" type="button" data-video-title="Wat kunt u verwachten bij de oplevering?" data-video-category-label="Oplevering">Bekijk uitleg<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-              </div>
-            </article>
-          </div>
+          <section id="video-empty-state" class="video-empty-state" hidden>
+            <span class="video-empty-state__icon" aria-hidden="true"><svg><use href="#icon-video"></use></svg></span>
+            <h2>Geen video's gevonden</h2>
+            <p>Pas uw zoekopdracht of filters aan om andere video's te bekijken.</p>
+            <button id="video-reset-filters" class="button button--outline" type="button">Wis filters</button>
+          </section>
         </section>
       </main>
     </div>
@@ -494,9 +461,13 @@
 
   <div id="app-toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-  <dialog id="video-dialog" class="video-dialog" aria-labelledby="video-dialog-title">
+  <dialog id="video-dialog" class="video-dialog" aria-labelledby="video-dialog-title" aria-describedby="video-dialog-description">
     <div class="video-dialog__stage">
-      <span class="play-mark play-mark--large" aria-hidden="true"><svg><use href="#icon-video"></use></svg></span>
+      <video id="video-dialog-player" controls preload="metadata" playsinline></video>
+      <div id="video-dialog-status" class="video-dialog__status" role="status">
+        <span aria-hidden="true"><svg><use href="#icon-video"></use></svg></span>
+        <strong>Video wordt geladen…</strong>
+      </div>
       <button class="dialog-close" type="button" aria-label="Sluit video" data-close-dialog>
         <svg aria-hidden="true"><use href="#icon-close"></use></svg>
       </button>
@@ -504,8 +475,15 @@
     <div class="video-dialog__content">
       <span id="video-dialog-category" class="category-label">Uitleg</span>
       <h2 id="video-dialog-title">Video-uitleg</h2>
-      <p>Dit is een visuele placeholder. De definitieve video en afspeelfunctionaliteit worden in een volgende fase toegevoegd.</p>
-      <button class="button button--secondary" type="button" data-close-dialog>Sluiten</button>
+      <p id="video-dialog-description"></p>
+      <div id="video-dialog-tags" class="video-dialog__tags" aria-label="Onderwerpen"></div>
+      <div class="video-dialog__actions">
+        <a id="video-dialog-huisinfo" class="button button--primary" href="#" hidden>
+          Open Huisinfo
+          <svg aria-hidden="true"><use href="#icon-external"></use></svg>
+        </a>
+        <button class="button button--secondary" type="button" data-close-dialog>Sluiten</button>
+      </div>
     </div>
   </dialog>
 

@@ -7,6 +7,8 @@
 
   const appData = window.KOPERS_APP_DATA;
   const chatService = window.KOPERS_CHAT_SERVICE;
+  const videoRecords = Array.isArray(appData?.videos) ? appData.videos : [];
+  const videosById = new Map(videoRecords.map((video) => [video.id, video]));
 
   function elementById(id) {
     return document.getElementById(id);
@@ -651,8 +653,13 @@
     const videosView = document.querySelector('[data-view="videos"]');
     if (videosView) {
       const videoId = route === "videos" ? params.get("video") : "";
-      if (videoId) videosView.dataset.requestedVideo = videoId;
-      else delete videosView.dataset.requestedVideo;
+      if (videoId) {
+        videosView.dataset.requestedVideo = videoId;
+        openVideoById(videoId, { syncRoute: false });
+      } else {
+        delete videosView.dataset.requestedVideo;
+        closeVideoDialog();
+      }
     }
 
     let target;
@@ -708,7 +715,7 @@
     window.setTimeout(resetPageScroll, 50);
     applyRouteContext(route, params);
 
-    if (moveFocus && mainContent) {
+    if (moveFocus && mainContent && !(route === "videos" && params.has("video"))) {
       mainContent.focus({ preventScroll: true });
     }
   }
@@ -873,7 +880,7 @@
     const target = button.dataset.chatActionTarget || "";
     const handlers = {
       timeline: () => navigateTo("tijdlijn", { phase: target }),
-      video: () => navigateTo("videos", { video: target }),
+      video: () => openVideoById(target),
       documents: () => navigateTo("info", { section: "documents" }),
       contact: () => navigateTo("info", { section: "contact" }),
       faq: showFaqSuggestions,
@@ -991,62 +998,447 @@
     resizeInput();
   }
 
-  function setupVideoFilters() {
-    const filters = Array.from(document.querySelectorAll("[data-video-filter]"));
-    const cards = Array.from(document.querySelectorAll("[data-video-category]"));
+  const videoLibraryState = {
+    category: "all",
+    query: "",
+    tag: "all",
+  };
+  let videoLoadVersion = 0;
+  let videoAvailabilityController;
 
-    filters.forEach((button) => {
+  function normalizeSearchText(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function videoCategoryKey(category) {
+    return normalizeSearchText(category).replace(/\s+/g, "-");
+  }
+
+  function createVideoCard(video) {
+    const featuredRank = Number(video.featuredRank) || 0;
+    const classes = ["video-card"];
+    if (featuredRank) classes.push("video-card--featured", `video-card--featured-${featuredRank}`);
+
+    const article = createElement("article", classes.join(" "));
+    const thumbnail = createElement(
+      "div",
+      `video-card__thumbnail video-card__thumbnail--${videoCategoryKey(video.category)}`,
+    );
+    const playMark = createElement("span", "play-mark");
+    const body = createElement("div", "video-card__body");
+    const category = createElement("span", "category-label", video.category);
+    const title = createElement("h2", "", video.title);
+    const description = createElement("p", "video-card__description", video.description);
+    const tags = createElement("ul", "video-card__tags");
+    const button = createElement("button", "button button--outline button--full", "Bekijk video");
+    const titleId = `video-card-title-${video.id}`;
+
+    article.dataset.videoCardId = video.id;
+    article.dataset.videoCategory = videoCategoryKey(video.category);
+    article.setAttribute("aria-labelledby", titleId);
+    title.id = titleId;
+
+    thumbnail.setAttribute("aria-hidden", "true");
+    if (video.thumbnail) {
+      const image = document.createElement("img");
+      image.src = video.thumbnail;
+      image.alt = "";
+      image.loading = "lazy";
+      thumbnail.append(image);
+    }
+
+    if (featuredRank) {
+      thumbnail.append(
+        createElement(
+          "span",
+          "video-feature-label",
+          featuredRank === 1 ? "Uitgelicht" : "Maak kennis",
+        ),
+      );
+    }
+
+    playMark.append(iconUse("icon-video"));
+    thumbnail.append(playMark);
+
+    tags.setAttribute("aria-label", "Onderwerpen");
+    (video.tags || []).slice(0, 3).forEach((tag) => {
+      tags.append(createElement("li", "", tag));
+    });
+
+    button.type = "button";
+    button.dataset.openVideo = "";
+    button.dataset.videoId = video.id;
+    button.setAttribute("aria-label", `Bekijk video: ${video.title}`);
+    button.append(iconUse("icon-arrow"));
+
+    body.append(category, title, description);
+    if (tags.childElementCount) body.append(tags);
+    body.append(button);
+    article.append(thumbnail, body);
+    return article;
+  }
+
+  function videoMatchesFilters(video) {
+    const categoryMatches = videoLibraryState.category === "all"
+      || videoCategoryKey(video.category) === videoLibraryState.category;
+    const normalizedTags = (video.tags || []).map(normalizeSearchText);
+    const tagMatches = videoLibraryState.tag === "all"
+      || normalizedTags.includes(videoLibraryState.tag);
+    const haystack = normalizeSearchText([
+      video.title,
+      video.description,
+      video.category,
+      ...(video.tags || []),
+    ].join(" "));
+    const queryMatches = normalizeSearchText(videoLibraryState.query)
+      .split(" ")
+      .filter(Boolean)
+      .every((term) => haystack.includes(term));
+    return categoryMatches && tagMatches && queryMatches;
+  }
+
+  function applyVideoFilters() {
+    const grid = elementById("video-grid");
+    const emptyState = elementById("video-empty-state");
+    const count = elementById("video-result-count");
+    if (!grid || !emptyState || !count) return;
+
+    let visibleCount = 0;
+    videoRecords.forEach((video) => {
+      const card = grid.querySelector(`[data-video-card-id="${video.id}"]`);
+      const isVisible = videoMatchesFilters(video);
+      if (card) card.hidden = !isVisible;
+      if (isVisible) visibleCount += 1;
+    });
+
+    count.textContent = visibleCount === 1 ? "1 video gevonden" : `${visibleCount} video's gevonden`;
+    grid.hidden = visibleCount === 0;
+    emptyState.hidden = visibleCount !== 0;
+  }
+
+  function renderVideoTagOptions() {
+    const select = elementById("video-tag-filter");
+    if (!select) return;
+
+    const tagsByValue = new Map();
+    videoRecords.forEach((video) => {
+      (video.tags || []).forEach((tag) => {
+        const value = normalizeSearchText(tag);
+        if (value && !tagsByValue.has(value)) tagsByValue.set(value, tag);
+      });
+    });
+
+    const options = Array.from(tagsByValue, ([value, label]) => ({ value, label }))
+      .sort((first, second) => first.label.localeCompare(second.label, "nl", { sensitivity: "base" }))
+      .map(({ value, label }) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = capitalize(label);
+        return option;
+      });
+    select.append(...options);
+  }
+
+  function renderVideoScreen() {
+    const grid = elementById("video-grid");
+    if (!grid) return;
+
+    const orderedVideos = [...videoRecords].sort((first, second) => {
+      const firstRank = Number(first.featuredRank) || Number.POSITIVE_INFINITY;
+      const secondRank = Number(second.featuredRank) || Number.POSITIVE_INFINITY;
+      return firstRank - secondRank;
+    });
+    grid.replaceChildren(...orderedVideos.map(createVideoCard));
+    renderVideoTagOptions();
+    applyVideoFilters();
+  }
+
+  function resetVideoFilters() {
+    videoLibraryState.category = "all";
+    videoLibraryState.query = "";
+    videoLibraryState.tag = "all";
+
+    const search = elementById("video-search-input");
+    const tagFilter = elementById("video-tag-filter");
+    if (search) search.value = "";
+    if (tagFilter) tagFilter.value = "all";
+    document.querySelectorAll("[data-video-filter]").forEach((button) => {
+      const isActive = button.dataset.videoFilter === "all";
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+    applyVideoFilters();
+  }
+
+  function setupVideoLibrary() {
+    const search = elementById("video-search-input");
+    const tagFilter = elementById("video-tag-filter");
+    const resetButton = elementById("video-reset-filters");
+
+    document.querySelectorAll("[data-video-filter]").forEach((button) => {
       button.addEventListener("click", () => {
-        const selected = button.dataset.videoFilter || "all";
-
-        filters.forEach((filter) => {
+        videoLibraryState.category = button.dataset.videoFilter || "all";
+        document.querySelectorAll("[data-video-filter]").forEach((filter) => {
           const isActive = filter === button;
           filter.classList.toggle("is-active", isActive);
           filter.setAttribute("aria-pressed", String(isActive));
         });
-
-        cards.forEach((card) => {
-          card.hidden = selected !== "all" && card.dataset.videoCategory !== selected;
-        });
+        applyVideoFilters();
       });
     });
+
+    search?.addEventListener("input", () => {
+      videoLibraryState.query = search.value;
+      applyVideoFilters();
+    });
+    tagFilter?.addEventListener("change", () => {
+      videoLibraryState.tag = tagFilter.value || "all";
+      applyVideoFilters();
+    });
+    resetButton?.addEventListener("click", resetVideoFilters);
+  }
+
+  function setVideoDialogStatus(message, { hidePlayer = false } = {}) {
+    const player = elementById("video-dialog-player");
+    const status = elementById("video-dialog-status");
+    const statusText = status?.querySelector("strong");
+    if (!player || !status || !statusText) return;
+
+    statusText.textContent = message || "";
+    status.hidden = !message;
+    player.hidden = hidePlayer;
+    player.setAttribute("aria-busy", String(Boolean(message) && !hidePlayer));
+  }
+
+  function resetVideoDialogMedia() {
+    const player = elementById("video-dialog-player");
+    if (!player) return;
+
+    videoLoadVersion += 1;
+    videoAvailabilityController?.abort();
+    videoAvailabilityController = undefined;
+    const hadSource = player.hasAttribute("src");
+    player.pause();
+    delete player.dataset.videoId;
+    player.removeAttribute("src");
+    player.removeAttribute("poster");
+    player.removeAttribute("aria-busy");
+    if (hadSource) player.load();
+  }
+
+  function clearVideoDeepLink() {
+    const { route, params } = currentHashState();
+    if (route !== "videos" || !params.has("video")) return;
+
+    window.history.replaceState(null, "", "#videos");
+    const videosView = document.querySelector('[data-view="videos"]');
+    if (videosView) delete videosView.dataset.requestedVideo;
+  }
+
+  function closeVideoDialog({ syncRoute = false } = {}) {
+    const dialog = elementById("video-dialog");
+    if (!dialog) return;
+
+    resetVideoDialogMedia();
+    setVideoDialogStatus("", { hidePlayer: false });
+    delete dialog.dataset.videoId;
+    if (dialog.open && typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+    if (syncRoute) clearVideoDeepLink();
+  }
+
+  async function videoAvailabilityFromDirectory(sourceUrl, signal) {
+    try {
+      const directoryUrl = new URL("./", sourceUrl);
+      const response = await window.fetch(directoryUrl, {
+        cache: "no-store",
+        signal,
+      });
+      if (!response.ok) return null;
+
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("text/html")) return null;
+
+      const documentText = await response.text();
+      const directoryDocument = new DOMParser().parseFromString(documentText, "text/html");
+      const listingLabel = `${directoryDocument.title} ${directoryDocument.querySelector("h1")?.textContent || ""}`;
+      const isDirectoryListing = /directory listing for|index of/i.test(listingLabel);
+      const targetUrl = new URL(sourceUrl.pathname, sourceUrl.origin).href;
+      const containsVideo = Array.from(directoryDocument.querySelectorAll("a[href]")).some((link) => {
+        const linkedUrl = new URL(link.getAttribute("href"), response.url);
+        return new URL(linkedUrl.pathname, linkedUrl.origin).href === targetUrl;
+      });
+
+      if (containsVideo) return true;
+      return isDirectoryListing ? false : null;
+    } catch (error) {
+      if (error?.name === "AbortError") throw error;
+      return null;
+    }
+  }
+
+  async function loadVideoSource(video) {
+    const player = elementById("video-dialog-player");
+    if (!player || !video.file) return;
+
+    const requestedVersion = videoLoadVersion;
+    const sourceUrl = new URL(video.file, window.location.href);
+    if (sourceUrl.protocol !== "file:" && typeof window.fetch === "function") {
+      const controller = new AbortController();
+      videoAvailabilityController = controller;
+
+      try {
+        const directoryAvailability = await videoAvailabilityFromDirectory(sourceUrl, controller.signal);
+        if (directoryAvailability === false) {
+          if (requestedVersion === videoLoadVersion && player.dataset.videoId === video.id) {
+            setVideoDialogStatus("Deze video is momenteel nog niet beschikbaar.", { hidePlayer: true });
+          }
+          return;
+        }
+
+        if (directoryAvailability === null) {
+          const response = await window.fetch(sourceUrl, {
+            method: "HEAD",
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          const methodUnsupported = response.status === 405 || response.status === 501;
+          if (!response.ok && !methodUnsupported) {
+            if (requestedVersion === videoLoadVersion && player.dataset.videoId === video.id) {
+              setVideoDialogStatus("Deze video is momenteel nog niet beschikbaar.", { hidePlayer: true });
+            }
+            return;
+          }
+        }
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+        if (requestedVersion === videoLoadVersion && player.dataset.videoId === video.id) {
+          setVideoDialogStatus("Deze video is momenteel nog niet beschikbaar.", { hidePlayer: true });
+        }
+        return;
+      } finally {
+        if (videoAvailabilityController === controller) videoAvailabilityController = undefined;
+      }
+    }
+
+    if (requestedVersion !== videoLoadVersion || player.dataset.videoId !== video.id) return;
+    player.src = video.file;
+    player.load();
+  }
+
+  function showVideoDialog(video) {
+    const dialog = elementById("video-dialog");
+    const player = elementById("video-dialog-player");
+    const tags = elementById("video-dialog-tags");
+    const huisinfoAction = elementById("video-dialog-huisinfo");
+    if (!dialog || !player || !tags || !huisinfoAction) return;
+
+    resetVideoDialogMedia();
+    dialog.dataset.videoId = video.id;
+    player.dataset.videoId = video.id;
+    setText("video-dialog-category", video.category);
+    setText("video-dialog-title", video.title);
+    setText("video-dialog-description", video.description);
+
+    tags.replaceChildren(
+      ...(video.tags || []).map((tag) => createElement("span", "video-dialog__tag", tag)),
+    );
+    tags.hidden = tags.childElementCount === 0;
+
+    huisinfoAction.hidden = !video.huisinfoAction;
+    if (video.huisinfoAction) configureHuisinfoLink(huisinfoAction, "Open Huisinfo");
+
+    if (typeof dialog.showModal === "function") {
+      if (!dialog.open) dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
+
+    if (!video.file) {
+      setVideoDialogStatus("Deze video is momenteel nog niet beschikbaar.", { hidePlayer: true });
+      return;
+    }
+
+    setVideoDialogStatus("Video wordt geladen…");
+    if (video.thumbnail) player.poster = video.thumbnail;
+    void loadVideoSource(video);
+  }
+
+  function openVideoById(videoId, { syncRoute = true } = {}) {
+    const requestedId = String(videoId || "").trim();
+    if (!requestedId || requestedId === "all") {
+      if (syncRoute) navigateTo("videos");
+      return false;
+    }
+
+    const video = videosById.get(requestedId);
+    if (!video) {
+      showToast("Deze video kon niet worden gevonden.");
+      if (syncRoute) navigateTo("videos");
+      else clearVideoDeepLink();
+      return false;
+    }
+
+    if (syncRoute) {
+      navigateTo("videos", { video: video.id });
+      return true;
+    }
+
+    showVideoDialog(video);
+    return true;
   }
 
   function setupVideoDialog() {
-    const dialog = document.querySelector("#video-dialog");
-    const title = document.querySelector("#video-dialog-title");
-    const category = document.querySelector("#video-dialog-category");
-    if (!dialog || !title || !category) return;
+    const dialog = elementById("video-dialog");
+    const player = elementById("video-dialog-player");
+    if (!dialog || !player) return;
 
-    document.querySelectorAll("[data-video-title]").forEach((button) => {
-      button.addEventListener("click", () => {
-        title.textContent = button.dataset.videoTitle || "Video-uitleg";
-        category.textContent = button.dataset.videoCategoryLabel || "Uitleg";
-
-        if (typeof dialog.showModal === "function") {
-          dialog.showModal();
-        } else {
-          dialog.setAttribute("open", "");
-        }
-      });
+    player.addEventListener("loadedmetadata", () => {
+      if (!player.dataset.videoId) return;
+      setVideoDialogStatus("");
+    });
+    player.addEventListener("error", () => {
+      if (!player.dataset.videoId) return;
+      setVideoDialogStatus("Deze video is momenteel nog niet beschikbaar.", { hidePlayer: true });
     });
 
     document.querySelectorAll("[data-close-dialog]").forEach((button) => {
-      button.addEventListener("click", () => dialog.close());
+      button.addEventListener("click", () => closeVideoDialog({ syncRoute: true }));
     });
-
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeVideoDialog({ syncRoute: true });
+    });
     dialog.addEventListener("click", (event) => {
-      if (event.target === dialog) dialog.close();
+      if (event.target === dialog) closeVideoDialog({ syncRoute: true });
     });
+    dialog.addEventListener("close", resetVideoDialogMedia);
   }
 
   document.addEventListener("click", (event) => {
+    const videoButton = event.target.closest("[data-open-video]");
+    if (videoButton) {
+      openVideoById(videoButton.dataset.videoId);
+      return;
+    }
+
     const routeButton = event.target.closest("[data-route-target]");
     if (routeButton) {
       const params = {};
       if (routeButton.dataset.videoId) params.video = routeButton.dataset.videoId;
       if (routeButton.dataset.phaseId) params.phase = routeButton.dataset.phaseId;
-      navigateTo(routeButton.dataset.routeTarget, params);
+      if (routeButton.dataset.routeTarget === "videos" && params.video) {
+        openVideoById(params.video);
+      } else {
+        navigateTo(routeButton.dataset.routeTarget, params);
+      }
+      return;
     }
 
     const demoButton = event.target.closest("[data-demo-action]");
@@ -1055,9 +1447,13 @@
 
   window.addEventListener("hashchange", () => renderRoute({ moveFocus: true }));
   window.addEventListener("pageshow", () => window.setTimeout(resetPageScroll, 50));
+  window.KOPERS_VIDEO_API = Object.freeze({
+    open: (videoId) => openVideoById(videoId),
+  });
 
   setupChatDemo();
-  setupVideoFilters();
+  renderVideoScreen();
+  setupVideoLibrary();
   setupVideoDialog();
   renderInfoScreen(appData);
   renderTimelineScreen(appData);
